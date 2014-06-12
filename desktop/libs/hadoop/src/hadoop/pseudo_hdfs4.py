@@ -455,7 +455,7 @@ class PseudoHdfs4(object):
       'yarn.nodemanager.localizer.address' : '%s:%s' % (self._fqdn, self._nm_port,),
       'yarn.nodemanager.aux-services': 'mapreduce_shuffle',
       'yarn.nodemanager.aux-services.mapreduce.shuffle.class': 'org.apache.hadoop.mapred.ShuffleHandler',
-      'yarn.nodemanager.webapp.address': self._nm_webapp_port,
+      'yarn.nodemanager.webapp.address': '%s:%s' % (self._fqdn, self._nm_webapp_port,),
 
       'yarn.app.mapreduce.am.staging-dir': '/tmp/hadoop-yarn/staging',
 
@@ -473,6 +473,7 @@ class PseudoHdfs4(object):
   def _write_mapred_site(self):
     self._jh_port = find_unused_port()
     self._jh_web_port = find_unused_port()
+    self._jh_admin_port = find_unused_port()
     self._mr_shuffle_port = find_unused_port()
 
     mapred_configs = {
@@ -480,6 +481,7 @@ class PseudoHdfs4(object):
       'mapreduce.framework.name': 'yarn',
       'mapreduce.jobhistory.address': '%s:%s' % (self._fqdn, self._jh_port,),
       'mapreduce.jobhistory.webapp.address': '%s:%s' % (self._fqdn, self._jh_web_port,),
+      'mapreduce.jobhistory.admin.address': '%s:%s' % (self._fqdn, self._jh_admin_port,),
       'mapreduce.task.tmp.dir': self._tmppath('tasks'),
       'mapreduce.shuffle.port': self._mr_shuffle_port,
     }
