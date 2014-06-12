@@ -68,14 +68,16 @@ class PseudoHdfs4(object):
     self._nn_proc = None
     self._dn_proc = None
     self._rm_proc = None
-    self._nm_proc = None
+    self._nm1_proc = None
+    self._nm2_proc = None
     self._hs_proc = None
 
     self._fqdn = socket.getfqdn()
 
-    self._core_site = None
-    self._hdfs_site = None
-    self._mapred_site = None
+    self._core_sites = []
+    self._hdfs_sites = []
+    self._mapred_sites = []
+    self._yarn_sites = []
 
     self.shutdown_hook = None
 
@@ -121,6 +123,14 @@ class PseudoHdfs4(object):
     return "%s:%s" % (self._fqdn, self._rm_port,)
 
   @property
+  def hadoop_conf_dir_nm1(self):
+    return self._tmppath('nm1-conf')
+
+  @property
+  def hadoop_conf_dir_nm2(self):
+    return self._tmppath('nm2-conf')
+
+  @property
   def hadoop_conf_dir(self):
     return self._tmppath('conf')
 
@@ -152,13 +162,14 @@ class PseudoHdfs4(object):
     _kill_proc('NameNode', self._nn_proc)
     _kill_proc('DataNode', self._dn_proc)
     _kill_proc('ResourceManager', self._rm_proc)
-    _kill_proc('Nodemanager', self._nm_proc)
+    _kill_proc('Nodemanager', self._nm1_proc)
+    _kill_proc('Nodemanager', self._nm2_proc)
     _kill_proc('HistoryServer', self._hs_proc)
 
     self._nn_proc = None
     self._dn_proc = None
     self._rm_proc = None
-    self._nm_proc = None
+    self._nm1_proc = None
     self._hs_proc = None
 
     if CLEANUP_TMP_DIR == 'false':
@@ -181,7 +192,8 @@ class PseudoHdfs4(object):
     LOG.info("Using temporary directory: %s" % (self._tmpdir,))
 
     if not os.path.exists(self.hadoop_conf_dir):
-      os.mkdir(self.hadoop_conf_dir)
+      os.mkdir(self.hadoop_conf_dir_nm1)
+      os.mkdir(self.hadoop_conf_dir_nm2)
 
     self._log_dir = self._tmppath('logs')
     if not os.path.exists(self._log_dir):
@@ -191,11 +203,14 @@ class PseudoHdfs4(object):
     if not os.path.exists(self._local_dir):
       os.mkdir(self._local_dir)
 
-    self._write_hadoop_metrics_conf(self.hadoop_conf_dir)
-    self._write_core_site()
+    self._write_hadoop_metrics_conf(self.hadoop_conf_dir_nm1)
+    self._write_hadoop_metrics_conf(self.hadoop_conf_dir_nm2)
+    self._write_core_sites()
     self._write_hdfs_site()
-    self._write_yarn_site()
-    self._write_mapred_site()
+    self._write_yarn_sites()
+    self._write_mapred_sites()
+
+    os.symlink(self.hadoop_conf_dir_nm1, self.hadoop_conf_dir)
 
     # More stuff to setup in the environment
     env = {
@@ -267,7 +282,8 @@ class PseudoHdfs4(object):
 
     # Run YARN
     self._rm_proc = self._start_daemon('resourcemanager', self.hadoop_conf_dir, self.mr2_env, self._get_yarn_bin(self.mr2_env))
-    self._nm_proc = self._start_daemon('nodemanager', self.hadoop_conf_dir, self.mr2_env, self._get_yarn_bin(self.mr2_env))
+    self._nm1_proc = self._start_daemon('nodemanager', self.hadoop_conf_dir_nm1, self.mr2_env, self._get_yarn_bin(self.mr2_env))
+    self._nm2_proc = self._start_daemon('nodemanager', self.hadoop_conf_dir_nm2, self.mr2_env, self._get_yarn_bin(self.mr2_env))
     self._hs_proc = self._start_daemon('historyserver', self.hadoop_conf_dir, self.mr2_env, self._get_mapred_bin(self.mr2_env))
 
     # Make sure they're running
@@ -330,8 +346,11 @@ class PseudoHdfs4(object):
     if self._rm_proc.poll() is not None:
       self._log_exit('resourcemanager', self._rm_proc.poll())
       return False
-    if self._nm_proc.poll() is not None:
-      self._log_exit('nodemanager', self._nm_proc.poll())
+    if self._nm1_proc.poll() is not None:
+      self._log_exit('nodemanager', self._nm1_proc.poll())
+      return False
+    if self._nm2_proc.poll() is not None:
+      self._log_exit('nodemanager', self._nm1_proc.poll())
       return False
     if self._hs_proc.poll() is not None:
       self._log_exit('historyserver', self._hs_proc.poll())
@@ -406,10 +425,12 @@ class PseudoHdfs4(object):
       'dfs.namenode.fs-limits.min-block-size': '1000',
       'dfs.permissions': 'true'
     }
-    self._hdfs_site = self._tmppath('conf/hdfs-site.xml')
-    write_config(hdfs_configs, self._hdfs_site)
+    self._hdfs_sites.append(self._tmppath('nm1-conf/hdfs-site.xml'))
+    self._hdfs_sites.append(self._tmppath('nm2-conf/hdfs-site.xml'))
+    for site_conf in self._hdfs_sites:
+      write_config(hdfs_configs, site_conf)
 
-  def _write_core_site(self):
+  def _write_core_sites(self):
     self._namenode_port = find_unused_port()
     self._fs_default_name = 'hdfs://%s:%s' % (self._fqdn, self._namenode_port,)
 
@@ -426,17 +447,21 @@ class PseudoHdfs4(object):
       'hadoop.tmp.dir': self._tmppath('hadoop_tmp_dir'),
       'fs.trash.interval': 10
     }
-    self._core_site = self._tmppath('conf/core-site.xml')
-    write_config(core_configs, self._core_site)
+    self._core_sites.append(self._tmppath('nm1-conf/core-site.xml'))
+    self._core_sites.append(self._tmppath('nm2-conf/core-site.xml'))
+    for site_conf in self._core_sites:
+      write_config(core_configs, site_conf)
 
-  def _write_yarn_site(self):
+  def _write_yarn_sites(self):
     self._rm_resource_port = find_unused_port()
     self._rm_port = find_unused_port()
     self._rm_scheduler_port = find_unused_port()
     self._rm_admin_port = find_unused_port()
     self._rm_webapp_port = find_unused_port()
-    self._nm_port = find_unused_port()
-    self._nm_webapp_port = find_unused_port()
+    self._nm1_port = find_unused_port()
+    self._nm2_port = find_unused_port()
+    self._nm1_webapp_port = find_unused_port()
+    self._nm2_webapp_port = find_unused_port()
 
     yarn_configs = {
       'yarn.resourcemanager.resource-tracker.address': '%s:%s' % (self._fqdn, self._rm_resource_port,),
@@ -452,10 +477,9 @@ class PseudoHdfs4(object):
       'yarn.nodemanager.local-dirs': self._local_dir,
       'yarn.nodemanager.log-dirs': self._logpath('yarn-logs'),
       'yarn.nodemanager.remote-app-log-dir': '/var/log/hadoop-yarn/apps',
-      'yarn.nodemanager.localizer.address' : '%s:%s' % (self._fqdn, self._nm_port,),
       'yarn.nodemanager.aux-services': 'mapreduce_shuffle',
       'yarn.nodemanager.aux-services.mapreduce.shuffle.class': 'org.apache.hadoop.mapred.ShuffleHandler',
-      'yarn.nodemanager.webapp.address': self._nm_webapp_port,
+      'yarn.scheduler.fair.user-as-default-queue': "false",
 
       'yarn.app.mapreduce.am.staging-dir': '/tmp/hadoop-yarn/staging',
 
@@ -466,25 +490,38 @@ class PseudoHdfs4(object):
         $HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*,
         $HADOOP_YARN_HOME/share/hadoop/yarn/*,$HADOOP_YARN_HOME/share/hadoop/yarn/lib/*''',
     }
-    self._yarn_site = self._tmppath('conf/yarn-site.xml')
-    write_config(yarn_configs, self._tmppath('conf/yarn-site.xml'))
+    self._yarn_sites.append(self._tmppath('nm1-conf/yarn-site.xml'))
+    self._yarn_sites.append(self._tmppath('nm2-conf/yarn-site.xml'))
+    index = 1
+    for site_conf in self._yarn_sites:
+      yarn_configs['yarn.nodemanager.localizer.address'] = '%s:%s' % (self._fqdn, getattr(self, '_nm%d_port' % index))
+      yarn_configs['yarn.nodemanager.webapp.address'] = '%s:%s' % (self._fqdn, getattr(self, '_nm%d_webapp_port' % index))
+      write_config(yarn_configs, site_conf)
+      index += 1
 
 
-  def _write_mapred_site(self):
+  def _write_mapred_sites(self):
     self._jh_port = find_unused_port()
     self._jh_web_port = find_unused_port()
-    self._mr_shuffle_port = find_unused_port()
+    self._jh_admin_port = find_unused_port()
+    self._mr_shuffle_port1 = find_unused_port()
+    self._mr_shuffle_port2 = find_unused_port()
 
     mapred_configs = {
       'mapred.job.tracker': '%s:%s' % (self._fqdn, self._rm_port,),
       'mapreduce.framework.name': 'yarn',
       'mapreduce.jobhistory.address': '%s:%s' % (self._fqdn, self._jh_port,),
       'mapreduce.jobhistory.webapp.address': '%s:%s' % (self._fqdn, self._jh_web_port,),
-      'mapreduce.task.tmp.dir': self._tmppath('tasks'),
-      'mapreduce.shuffle.port': self._mr_shuffle_port,
+      'mapreduce.jobhistory.admin.address': '%s:%s' % (self._fqdn, self._jh_admin_port,),
+      'mapreduce.task.tmp.dir': self._tmppath('tasks')
     }
-    self._mapred_site = self._tmppath('conf/mapred-site.xml')
-    write_config(mapred_configs, self._tmppath('conf/mapred-site.xml'))
+    self._mapred_sites.append(self._tmppath('nm1-conf/mapred-site.xml'))
+    self._mapred_sites.append(self._tmppath('nm2-conf/mapred-site.xml'))
+    index = 1
+    for site_conf in self._mapred_sites:
+      mapred_configs['mapreduce.shuffle.port'] = '%s' % getattr(self, '_mr_shuffle_port%d' % index)
+      write_config(mapred_configs, site_conf)
+      index += 1
 
   def _write_hadoop_metrics_conf(self, conf_dir):
     f = file(os.path.join(conf_dir, "hadoop-metrics.properties"), "w")
