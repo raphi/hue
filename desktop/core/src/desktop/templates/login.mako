@@ -257,10 +257,20 @@ ${ commonheader("Welcome to Hue", "login", user, "50px") | n,unicode }
       no_results_text: "${_('Oops, no database found!')}"
     });
 
-    $("form").on("submit", function () {
+    // Modified by Raphael
+    $("form").on("submit", function (e) {
+      // Stop sending the form to let the tracking time
+      var self = this;
+      e.preventDefault();
+
       window.setTimeout(function () {
         $("#logo").addClass("waiting");
       }, 1000);
+
+      var username = $("input[name='username']").val();
+      analytics.identify(username, function() {
+        self.submit();
+      });
     });
 
     % if backend_name == 'AllowAllBackend':
@@ -280,5 +290,7 @@ ${ commonheader("Welcome to Hue", "login", user, "50px") | n,unicode }
     });
   });
 </script>
+
+
 
 ${ commonfooter(messages) | n,unicode }
