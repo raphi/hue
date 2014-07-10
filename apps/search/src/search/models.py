@@ -240,7 +240,7 @@ class Collection(models.Model):
   sorting = models.ForeignKey(Sorting)
 
   _ATTRIBUTES = ['collection', 'layout', 'autocomplete']
-  ICON = '/search/static/art/icon_search_24.png'
+  ICON = '/search/static/art/icon_search_48.png'
 
   objects = CollectionManager()
 
@@ -369,13 +369,13 @@ class Collection(models.Model):
   @property
   def icon(self):
     if self.name == 'twitter_demo':
-      return '/search/static/art/icon_twitter.png'
+      return '/search/static/art/icon_twitter_48.png'
     elif self.name == 'yelp_demo':
-      return '/search/static/art/icon_yelp.png'
+      return '/search/static/art/icon_yelp_48.png'
     elif self.name == 'log_analytics_demo':
-      return '/search/static/art/icon_logs.png'
+      return '/search/static/art/icon_logs_48.png'
     else:
-      return '/search/static/art/icon_search_24.png'
+      return '/search/static/art/icon_search_48.png'
 
   def _import_hue_3_5_collections(self, props, user):
     props['collection']['template']['template'] = self.result.get_template()
@@ -502,7 +502,7 @@ def augment_solr_response(response, collection, query):
     doc['details'] = []
 
   highlighted_fields = response.get('highlighting', {}).keys()
-  if highlighted_fields:
+  if highlighted_fields and not query.get('download'):
     id_field = collection.get('idField')
     if id_field:
       for doc in response['response']['docs']:

@@ -46,7 +46,7 @@ ${layout.menubar(section='query')}
           <ul class="nav nav-list" style="border: none; padding: 0; background-color: #FFF">
             <li class="nav-header">${_('database')}</li>
           </ul>
-          <select data-bind="options: databases, value: database" class="input-medium chosen-select" name="query-database" data-placeholder="${_('Choose a database...')}"></select>
+          <select data-bind="options: databases, value: database" class="input-medium chosen-select hide" name="query-database" data-placeholder="${_('Choose a database...')}"></select>
           <input id="navigatorSearch" type="text" placeholder="${ _('Table name...') }" style="width:90%; margin-top: 20px"/>
           <div id="navigatorNoTables">${_('The selected database has no tables.')}</div>
           <ul id="navigatorTables" class="unstyled"></ul>
@@ -964,7 +964,6 @@ var CURRENT_CODEMIRROR_SIZE = 100;
 
 // Navigator, recent queries
 $(document).ready(function () {
-
   var INITIAL_RESIZE_POSITION = 299;
   $("#resizePanel a").draggable({
     axis: "y",
@@ -1078,89 +1077,97 @@ $(document).ready(function () {
   resetNavigator = function () {
     var _db = viewModel.database();
     if (_db != null) {
-      $.totalStorage(hac_getTotalStorageUserPrefix() + 'tables_' + _db, null);
-      $.totalStorage(hac_getTotalStorageUserPrefix() + 'timestamp_tables_' + _db, null);
-      renderNavigator();
+      $.totalStorage(hac_getTotalStorageUserPrefix() + 'databases', null);
+      getDatabases(function(){
+        $.totalStorage(hac_getTotalStorageUserPrefix() + 'tables_' + _db, null);
+        $.totalStorage(hac_getTotalStorageUserPrefix() + 'timestamp_tables_' + _db, null);
+        renderNavigator();
+      });
     }
   }
 
   renderNavigator = function () {
     $("#navigatorTables").empty();
     $("#navigatorLoader").show();
-    hac_getTables(viewModel.database(), function (data) {  //preload tables for the default db
-      $(data.split(" ")).each(function (cnt, table) {
-        if ($.trim(table) != "") {
-          var _table = $("<li>");
-          var _metastoreLink = "";
-          % if has_metastore:
-            _metastoreLink = "<i class='fa fa-eye' title='" + "${ _('View in Metastore Browser') }" + "'></i>";
-          % endif
-          _table.html("<a href='javascript:void(0)' class='pull-right' style='padding-right:5px'><i class='fa fa-list' title='" + "${ _('Preview Sample data') }" + "' style='margin-left:5px'></i></a><a href='/metastore/table/" + viewModel.database() + "/" + table + "' target='_blank' class='pull-right hide'>" + _metastoreLink + "</a><div><a href='javascript:void(0)' title='" + table + "'><i class='fa fa-table'></i> " + table + "</a><ul class='unstyled'></ul></div>");
 
-          _table.data("table", table).attr("id", "navigatorTables_" + table);
-          _table.find("a:eq(2)").on("click", function () {
-            _table.find(".fa-table").removeClass("fa-table").addClass("fa-spin").addClass("fa-spinner");
-            hac_getTableColumns(viewModel.database(), table, "", function (plain_columns, extended_columns) {
-              _table.find("a:eq(1)").removeClass("hide");
-              _table.find("ul").empty();
-              _table.find(".fa-spinner").removeClass("fa-spinner").removeClass("fa-spin").addClass("fa-table");
-              $(extended_columns).each(function (iCnt, col) {
-                var _column = $("<li>");
-                _column.html("<a href='javascript:void(0)' style='padding-left:10px'" + (col.comment != null && col.comment != "" ? " title='" + col.comment + "'" : "") + "><i class='fa fa-columns'></i> " + col.name + ($.trim(col.type) != "" ? " (" + $.trim(col.type) + ")" : "") + "</a>");
-                _column.appendTo(_table.find("ul"));
-                _column.on("dblclick", function () {
-                  codeMirror.replaceSelection($.trim(col.name) + ', ');
-                  codeMirror.setSelection(codeMirror.getCursor());
-                  codeMirror.focus();
+    if (! viewModel.database()) {
+      $("#navigatorLoader").html("${_('No databases or tables found.')}");
+    } else {
+      hac_getTables(viewModel.database(), function (data) {  //preload tables for the default db
+        $(data.split(" ")).each(function (cnt, table) {
+          if ($.trim(table) != "") {
+            var _table = $("<li>");
+            var _metastoreLink = "";
+            % if has_metastore:
+              _metastoreLink = "<i class='fa fa-eye' title='" + "${ _('View in Metastore Browser') }" + "'></i>";
+            % endif
+            _table.html("<a href='javascript:void(0)' class='pull-right' style='padding-right:5px'><i class='fa fa-list' title='" + "${ _('Preview Sample data') }" + "' style='margin-left:5px'></i></a><a href='/metastore/table/" + viewModel.database() + "/" + table + "' target='_blank' class='pull-right hide'>" + _metastoreLink + "</a><div><a href='javascript:void(0)' title='" + table + "'><i class='fa fa-table'></i> " + table + "</a><ul class='unstyled'></ul></div>");
+
+            _table.data("table", table).attr("id", "navigatorTables_" + table);
+            _table.find("a:eq(2)").on("click", function () {
+              _table.find(".fa-table").removeClass("fa-table").addClass("fa-spin").addClass("fa-spinner");
+              hac_getTableColumns(viewModel.database(), table, "", function (plain_columns, extended_columns) {
+                _table.find("a:eq(1)").removeClass("hide");
+                _table.find("ul").empty();
+                _table.find(".fa-spinner").removeClass("fa-spinner").removeClass("fa-spin").addClass("fa-table");
+                $(extended_columns).each(function (iCnt, col) {
+                  var _column = $("<li>");
+                  _column.html("<a href='javascript:void(0)' style='padding-left:10px'" + (col.comment != null && col.comment != "" ? " title='" + col.comment + "'" : "") + "><i class='fa fa-columns'></i> " + col.name + ($.trim(col.type) != "" ? " (" + $.trim(col.type) + ")" : "") + "</a>");
+                  _column.appendTo(_table.find("ul"));
+                  _column.on("dblclick", function () {
+                    codeMirror.replaceSelection($.trim(col.name) + ', ');
+                    codeMirror.setSelection(codeMirror.getCursor());
+                    codeMirror.focus();
+                  });
                 });
               });
             });
-          });
-          _table.find("a:eq(2)").on("dblclick", function () {
-            codeMirror.replaceSelection($.trim(table) + ' ');
-            codeMirror.setSelection(codeMirror.getCursor());
-            codeMirror.focus();
-          });
-          _table.find("a:eq(0)").on("click", function () {
-            var tableUrl = "/${ app_name }/api/table/" + viewModel.database() + "/" + _table.data("table");
-            $("#navigatorQuicklook").find(".tableName").text(table);
-            $("#navigatorQuicklook").find(".tableLink").attr("href", "/metastore/table/" + viewModel.database() + "/" + table);
-            $("#navigatorQuicklook").find(".sample").empty("");
-            $("#navigatorQuicklook").attr("style", "width: " + ($(window).width() - 120) + "px;margin-left:-" + (($(window).width() - 80) / 2) + "px!important;");
-            $.ajax({
-              url: tableUrl,
-              data: {"sample": true},
-              beforeSend: function (xhr) {
-                xhr.setRequestHeader("X-Requested-With", "Hue");
-              },
-              dataType: "html",
-              success: function (data) {
-                $("#navigatorQuicklook").find(".loader").hide();
-                $("#navigatorQuicklook").find(".sample").html(data);
-              },
-              error: function (e) {
-                if (e.status == 500) {
-                  resetNavigator();
-                  $(document).trigger("error", "${ _('There was a problem loading the table preview.') }");
-                  $("#navigatorQuicklook").modal("hide");
-                }
-              }
+            _table.find("a:eq(2)").on("dblclick", function () {
+              codeMirror.replaceSelection($.trim(table) + ' ');
+              codeMirror.setSelection(codeMirror.getCursor());
+              codeMirror.focus();
             });
-            $("#navigatorQuicklook").modal("show");
-          });
-          _table.appendTo($("#navigatorTables"));
+            _table.find("a:eq(0)").on("click", function () {
+              var tableUrl = "/${ app_name }/api/table/" + viewModel.database() + "/" + _table.data("table");
+              $("#navigatorQuicklook").find(".tableName").text(table);
+              $("#navigatorQuicklook").find(".tableLink").attr("href", "/metastore/table/" + viewModel.database() + "/" + table);
+              $("#navigatorQuicklook").find(".sample").empty("");
+              $("#navigatorQuicklook").attr("style", "width: " + ($(window).width() - 120) + "px;margin-left:-" + (($(window).width() - 80) / 2) + "px!important;");
+              $.ajax({
+                url: tableUrl,
+                data: {"sample": true},
+                beforeSend: function (xhr) {
+                  xhr.setRequestHeader("X-Requested-With", "Hue");
+                },
+                dataType: "html",
+                success: function (data) {
+                  $("#navigatorQuicklook").find(".loader").hide();
+                  $("#navigatorQuicklook").find(".sample").html(data);
+                },
+                error: function (e) {
+                  if (e.status == 500) {
+                    resetNavigator();
+                    $(document).trigger("error", "${ _('There was a problem loading the table preview.') }");
+                    $("#navigatorQuicklook").modal("hide");
+                  }
+                }
+              });
+              $("#navigatorQuicklook").modal("show");
+            });
+            _table.appendTo($("#navigatorTables"));
+          }
+        });
+        $("#navigatorLoader").hide();
+        if ($("#navigatorTables li").length > 0) {
+          $("#navigatorSearch").show();
+          $("#navigatorNoTables").hide();
+        }
+        else {
+          $("#navigatorSearch").hide();
+          $("#navigatorNoTables").show();
         }
       });
-      $("#navigatorLoader").hide();
-      if ($("#navigatorTables li").length > 0) {
-        $("#navigatorSearch").show();
-        $("#navigatorNoTables").hide();
-      }
-      else {
-        $("#navigatorSearch").hide();
-        $("#navigatorNoTables").show();
-      }
-    });
+    }
   }
 
   $("#expandResults").on("click", function(){
@@ -1175,29 +1182,15 @@ $(document).ready(function () {
     reinitializeTable();
   });
 
-  renderNavigator();
-
   $("#refreshNavigator").on("click", function () {
     resetNavigator();
   });
 
   resizeNavigator();
 
-  viewModel.databases.subscribe(function () {
-    if ($.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database") != null && $.inArray($.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database"), viewModel.databases())) {
-      viewModel.database($.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database"));
-    }
-  });
-
   viewModel.database.subscribe(function (value) {
     $(".chosen-select").trigger("chosen:updated");
     renderNavigator();
-  });
-
-  $(".chosen-select").chosen({
-    disable_search_threshold: 5,
-    width: "100%",
-    no_results_text: "${_('Oops, no database found!')}"
   });
 
   $(document).on("click", ".column-selector", function () {
@@ -2492,15 +2485,42 @@ function cacheQueryTextEvents() {
   });
 }
 
-function databaseCacheWriter() {
-  $(".chosen-select").chosen().change(function () {
-    $.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database", viewModel.database());
+function getDatabases(callback){
+  $(document).one('fetched.databases', function() {
+    window.setTimeout(function(){
+      $(".chosen-select").chosen({
+        disable_search_threshold: 5,
+        width: "100%",
+        no_results_text: "${_('Oops, no database found!')}"
+      }).change(function () {
+        saveLastUsedDatabase();
+      });
+      $(".chosen-select").trigger("chosen:updated");
+      if ($.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database") != null && $.inArray($.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database"), viewModel.databases()) > -1) {
+        viewModel.database($.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database"));
+      }
+      else {
+        $.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database", null);
+      }
+      renderNavigator();
+    }, 200)
+  });
+  hac_getDatabases(function (dbs) {
+    viewModel.updateDatabases(dbs);
+
+    if (typeof callback != "undefined"){
+      callback(dbs);
+    }
+    $(document).trigger('fetched.databases', [dbs]);
   });
 }
 
+function saveLastUsedDatabase(){
+  $.totalStorage(hac_getTotalStorageUserPrefix() + "${app_name}_last_database", viewModel.database());
+}
+
 function loadEditor() {
-  $(document).one('fetched.databases', databaseCacheWriter);
-  viewModel.fetchDatabases();
+  getDatabases();
 }
 
 function loadDesign(design_id) {
@@ -2509,7 +2529,7 @@ function loadDesign(design_id) {
     viewModel.fetchDesign();
   });
 
-  $(document).one('fetched.design', databaseCacheWriter);
+  $(document).one('fetched.design', saveLastUsedDatabase);
 
   var codeMirrorSubscription = viewModel.design.query.value.subscribe(function(value) {
     viewModel.queryEditorBlank(true);
@@ -2526,7 +2546,7 @@ function loadQueryHistory(query_history_id) {
     viewModel.fetchQueryHistory();
   });
 
-  $(document).one('fetched.query', databaseCacheWriter);
+  $(document).one('fetched.query', saveLastUsedDatabase);
 
   var codeMirrorSubscription = viewModel.design.query.value.subscribe(function(value) {
     viewModel.queryEditorBlank(true);
