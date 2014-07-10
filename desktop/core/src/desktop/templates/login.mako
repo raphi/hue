@@ -196,7 +196,7 @@ ${ commonheader("Welcome to Hue", "login", user, "50px") | n,unicode }
         %if first_login_ever:
           <h3>${_('Create your Hue account')}</h3>
         %else:
-          <h3>${_('Sign in to continue to Hue')}</h3>
+          <h3>${_('Sign in to Powerlinx Lab')}</h3>
         %endif
 
         %if first_login_ever:
