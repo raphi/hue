@@ -42,7 +42,7 @@ ${ commonheader("Welcome to Hue", "login", user, "50px") | n,unicode }
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 10px;
-    background: #FFF url("/static/art/hue-login-logo-ellie.png") 50% 2px no-repeat;
+    background: #FFF url("/static/art/powerlinx-lab-logo.png") 50% 2px no-repeat;
     width: 130px;
     height: 130px;
     -webkit-border-radius: 65px;
