@@ -169,8 +169,12 @@
   }
   
   function createPotentialMatch(linxIdSalesForce, candidateIdSalesForce) {
-  	
-  	var query = $('input[name="query"]').val();
+  	var query = $(".search-query").val();
+
+    showShareModal();
+  	var queryUrl = $("#shareModal input").val();
+    $("#shareModal").modal("hide");
+
   	var batchId = $.cookie("batchNumber");
   
   	var potentialMatchJSON = {
@@ -178,7 +182,7 @@
   		"Linx__c": linxIdSalesForce,
   		"Batch__c": batchId,
   		"Query__c": query,
-  		"Query_url__c": window.location.href
+  		"Query_url__c": queryUrl
   	};
   
   	client.create('Potential_Match__c',
