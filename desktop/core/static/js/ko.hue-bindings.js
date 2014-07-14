@@ -169,12 +169,12 @@ ko.bindingHandlers.slider = {
     var _el = $(element);
     var _options = $.extend(valueAccessor(), {});
     _el.slider({
-      min: _options.start() ? _options.start() : 0,
-      max: _options.end() ? _options.end() : 10,
-      step: _options.gap() ? _options.gap() : 1,
+      min: !isNaN(parseFloat(_options.start())) ? parseFloat(_options.start()) : 0,
+      max: !isNaN(parseFloat(_options.end())) ? parseFloat(_options.end()) : 10,
+      step: !isNaN(parseFloat(_options.gap())) ? parseFloat(_options.gap()) : 1,
       handle: _options.handle ? _options.handle : 'triangle',
-      start: _options.min(),
-      end: _options.max(),
+      start: parseFloat(_options.min()),
+      end: parseFloat(_options.max()),
       tooltip_split: true,
       tooltip: 'always'
     });
@@ -310,7 +310,7 @@ ko.bindingHandlers.daterangepicker = {
     var _startMoment = moment(_options.start());
     var _endMoment = moment(_options.end());
 
-    if (_minMoment.isValid()) {
+    if (_minMoment.isValid() && _maxMoment.isValid()) {
       _tmpl.find(".facet-field-cnt.custom").hide();
       _tmpl.find(".facet-field-cnt.picker").show();
       _tmpl.find(".start-date").val(_minMoment.format(DATE_FORMAT));
@@ -334,6 +334,10 @@ ko.bindingHandlers.daterangepicker = {
       rangeHandler(true);
     });
 
+    _tmpl.find(".start-date").on("change", function(){
+      rangeHandler(true);
+    });
+
     _tmpl.find(".start-time").timepicker({
       minuteStep: 1,
       showSeconds: true,
@@ -345,6 +349,10 @@ ko.bindingHandlers.daterangepicker = {
       format: DATE_FORMAT.toLowerCase()
     }).on("changeDate", function () {
       rangeHandler(false);
+    });
+
+    _tmpl.find(".end-date").on("change", function(){
+      rangeHandler(true);
     });
 
     _tmpl.find(".end-time").timepicker({
@@ -368,7 +376,7 @@ ko.bindingHandlers.daterangepicker = {
       }, 200);
     });
 
-    if (_minMoment.isValid()) {
+    if (_minMoment.isValid() && _maxMoment.isValid()) {
       rangeHandler(true);
     }
 
