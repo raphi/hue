@@ -206,14 +206,24 @@
   	return linxId;
   }
   
-  $(document).load(function() {
-  	client = new forcetk.Client(clientId, loginUrl, proxyURL);
-  });
+  function checkDOMChange()
+  {
+    if ($("#result-main").length) {
+      loadListeners();
+    } else {
+      // call the function again after 100 milliseconds
+      setTimeout( checkDOMChange, 100 );
+    }
+  }
   
-  $(document).ready(function() {
-  
-    setTimeout(function() {
-      $(".save-candidate-btn, .save-candidate-top-btn").on('click', function(e) {
+  checkDOMChange();
+
+  // On ready is not working because the main content is dynamically loaded by Hue after the page is loaded
+  function loadListeners() {
+
+    client = new forcetk.Client(clientId, loginUrl, proxyURL);
+
+    $(".save-candidate-btn, .save-candidate-top-btn").on('click', function(e) {
         e.preventDefault();
     
         var button = e.currentTarget;
@@ -246,9 +256,7 @@
         $(selector).modalHue("show");
       });
 
-    }, 1000);
-
-  });
+  }
 
 // Custom Modal.js from Bootstrap
   

@@ -908,6 +908,9 @@ ${ dashboard.import_layout() }
 <script src="/static/ext/chosen/chosen.jquery.min.js" type="text/javascript" charset="utf-8"></script>
 
 <script src="/search/static/js/search.ko.js" type="text/javascript" charset="utf-8"></script>
+
+<!-- Custom script for Powerlinx -->
+<script src="https://lab.powerlinx.com:3000/js/forcetk.js" type="text/javascript" charset="utf-8"></script>
 <script src="/search/static/js/powerlinx.js" type="text/javascript" charset="utf-8"></script>
 
 ${ dashboard.import_bindings() }
