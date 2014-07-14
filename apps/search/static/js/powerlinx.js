@@ -210,24 +210,11 @@
   	return linxId;
   }
   
-  function checkDOMChange()
-  {
-    if ($(".result-row").length) {
-      loadListeners();
-    } else {
-      // call the function again after 100 milliseconds
-      setTimeout( checkDOMChange, 100 );
-    }
-  }
-  
-  checkDOMChange();
-
-  // On ready is not working because the main content is dynamically loaded by Hue after the page is loaded
-  function loadListeners() {
+  $(document).ready(function() {
 
     client = new forcetk.Client(clientId, loginUrl, proxyURL);
 
-    $(".save-candidate-btn, .save-candidate-top-btn").on('click', function(e) {
+    $(document).on('click', ".save-candidate-btn, .save-candidate-top-btn", function(e) {
         e.preventDefault();
     
         var button = e.currentTarget;
@@ -249,7 +236,7 @@
         $("#setup-linx-popup").modalHue("hide");
       });
 
-      $(".company-row").on("click", function(e) {
+      $(document).on("click", ".company-row", function(e) {
         e.preventDefault();
 
         var selector = $(e.currentTarget).attr("data-target");
@@ -259,8 +246,8 @@
         removeUselessSections("#company-profile-popup");
         $(selector).modalHue("show");
       });
-
-  }
+      
+  });
 
 // Custom Modal.js from Bootstrap
   
