@@ -208,7 +208,7 @@
   
   function checkDOMChange()
   {
-    if ($("#result-main").length) {
+    if ($(".result-row").length) {
       loadListeners();
     } else {
       // call the function again after 100 milliseconds
