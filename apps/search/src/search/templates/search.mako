@@ -31,6 +31,34 @@ ${ commonheader(_('Search'), "search", user, "80px") | n,unicode }
   }
 </script>
 
+<!-- Modal Setup Linx -->
+<div class="modalHue fade" id="setup-linx-popup" tabindex="-1" role="dialog" aria-labelledby="modal-linx-setup" aria-hidden="true">
+  <div class="modalHue-dialog modalHue-sm">
+    <div class="modalHue-content">
+      <div class="modalHue-header">
+        <button type="button" class="close" data-dismiss="modalHue"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modalHue-title" id="myModalLabel">Setup your processing Linx</h4>
+      </div>
+      <div class="modalHue-body" style="padding-bottom: 0;">
+        <div class="form-group">
+          <label for="linx-id">Linx ID</label>
+          <input type="text" id="linx-id" placeholder="Type the Powerlinx Linx ID here" style="width: 100%;" />
+        </div>
+        <div class="form-group">
+          <label for="batch-number">Batch number</label>
+          <input type="text" id="batch-number" placeholder="Type the batch number here" style="width: 100%;" />
+        </div>
+      </div>
+      <div class="modalHue-footer">
+        <button type="button" class="btn btn-primary save-btn">Save & Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Company Profile -->
+<div id="company-profile-popup"></div>
+
 <div class="search-bar">
   <div class="pull-right" style="padding-right:50px">
     % if user.is_superuser:
@@ -47,6 +75,10 @@ ${ commonheader(_('Search'), "search", user, "80px") | n,unicode }
       <a class="btn" href="${ url('search:new_search') }" title="${ _('New') }" rel="tooltip" data-placement="bottom" data-bind="css: {'btn': true}"><i class="fa fa-file-o"></i></a>
       <a class="btn" href="${ url('search:admin_collections') }" title="${ _('Collections') }" rel="tooltip" data-placement="bottom" data-bind="css: {'btn': true}"><i class="fa fa-tags"></i></a>
     % endif
+  </div>
+
+  <div class="pull-right" style="margin-right: 20px;">
+    <button type="button" class="btn btn-default setup-linx-btn btn-info" data-toggle="modalHue" data-target="#setup-linx-popup">Setup Linx</button>
   </div>
 
   <form data-bind="visible: $root.isEditing() && columns().length == 0">
@@ -174,7 +206,6 @@ ${ commonheader(_('Search'), "search", user, "80px") | n,unicode }
 </%dashboard:layout_toolbar>
 
 ${ dashboard.layout_skeleton() }
-
 
 <script type="text/html" id="empty-widget">
   ${ _('This is an empty widget.')}
@@ -854,12 +885,12 @@ ${ dashboard.layout_skeleton() }
   </div>
 </div>
 
-
 ## Extra code for style and custom JS
 <span id="extra" data-bind="augmenthtml: $root.collection.template.extracode"></span>
 
 
 <link rel="stylesheet" href="/search/static/css/search.css">
+<link rel="stylesheet" href="/search/static/css/powerlinx.css">
 <link rel="stylesheet" href="/static/ext/css/hue-filetypes.css">
 <link rel="stylesheet" href="/static/ext/css/hue-charts.css">
 <link rel="stylesheet" href="/static/ext/chosen/chosen.min.css">
@@ -877,6 +908,7 @@ ${ dashboard.import_layout() }
 <script src="/static/ext/chosen/chosen.jquery.min.js" type="text/javascript" charset="utf-8"></script>
 
 <script src="/search/static/js/search.ko.js" type="text/javascript" charset="utf-8"></script>
+<script src="/search/static/js/powerlinx.js" type="text/javascript" charset="utf-8"></script>
 
 ${ dashboard.import_bindings() }
 ${ dashboard.import_charts() }
