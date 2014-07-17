@@ -99,7 +99,7 @@ ${ commonheader(_('Search'), "search", user, "80px") | n,unicode }
       </div>
 
       <span data-bind="foreach: query.qs">
-        <input data-bind="clearable: q" maxlength="4096" type="text" class="search-query input-xlarge">
+        <input data-bind="clearable: q" maxlength="4096" type="text" class="search-query input-xlarge" placeholder="Enter product or service">
         <!-- ko if: $index() >= 1 -->
         <a class="btn" href="javascript:void(0)" data-bind="click: $root.query.removeQ"><i class="fa fa-minus"></i></a>
         <!-- /ko -->
