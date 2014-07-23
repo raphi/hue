@@ -1068,6 +1068,12 @@ a#advanced-btn:hover {
   border-color: #999999;
 }
 
+.hueCheckboxText {
+  left: 3px;
+  position: relative;
+  top: -3px;
+}
+
 .modal form {
   margin: 0;
 }
@@ -1258,12 +1264,6 @@ a#advanced-btn:hover {
 .CodeMirror-spinner {
   position: absolute;
   z-index: 9999;
-}
-
-
-.card table {
-  padding-left: 10px;
-  padding-right: 10px;
 }
 
 .tooltip {
@@ -1663,4 +1663,24 @@ border-bottom-left-radius: 0px;
 .app-icon {
   width: 24px;
   height: 24px;
+}
+
+.brand img {
+  width: 60px;
+  height: 16px;
+}
+
+/*********************************************************
+ *
+ * Misc styles that can be reused as needed
+ * - from admin_collections.mako template
+ *
+ ********************************************************/
+.spinner {
+ color: #ddd;
+ font-size: 60px;
+}
+
+.pointer {
+ cursor: pointer;
 }

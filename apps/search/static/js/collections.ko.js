@@ -20,7 +20,7 @@ var Importable = function (importable) {
   self.name = ko.observable(importable.name);
   self.selected = ko.observable(false);
   self.handleSelect = function (row, e) {
-    this.selected(!this.selected());
+    self.selected(! self.selected());
   };
 };
 
@@ -30,21 +30,29 @@ var Collection = function (coll) {
   self.id = ko.observable(coll.id);
   self.name = ko.observable(coll.name);
   self.label = ko.observable(coll.label);
+  self.enabled = ko.observable(coll.enabled);
   self.isCoreOnly = ko.observable(coll.isCoreOnly);
   self.absoluteUrl = ko.observable(coll.absoluteUrl);
   self.selected = ko.observable(false);
   self.hovered = ko.observable(false);
 
   self.handleSelect = function (row, e) {
-    this.selected(!this.selected());
+    self.selected(! self.selected());
   };
   self.toggleHover = function (row, e) {
-    this.hovered(!this.hovered());
+    self.hovered(! self.hovered());
   };
 }
 
 var SearchCollectionsModel = function (props) {
-  var self = this;
+  var cleanCollections,
+    self = this;
+
+  cleanCollections = function () {
+    self.isLoading(true);
+    self.collections.removeAll();
+    self.filteredCollections.removeAll();
+  };
 
   self.LABELS = props.labels;
 
@@ -53,6 +61,7 @@ var SearchCollectionsModel = function (props) {
   self.IMPORT_URL = props.importUrl;
   self.DELETE_URL = props.deleteUrl;
   self.COPY_URL = props.copyUrl;
+  self.INDEXER_URL = props.indexerUrl;
 
   self.isLoading = ko.observable(true);
   self.isLoadingImportables = ko.observable(false);
@@ -63,8 +72,6 @@ var SearchCollectionsModel = function (props) {
 
   self.importableCollections = ko.observableArray([]);
   self.importableCores = ko.observableArray([]);
-
-  self.collectionToDelete = null;
 
   self.selectedCollections = ko.computed(function () {
     return ko.utils.arrayFilter(self.collections(), function (coll) {
@@ -99,40 +106,43 @@ var SearchCollectionsModel = function (props) {
   };
 
   self.editCollection = function (collection) {
-    self.isLoading(true);
-    self.collections.removeAll();
-    self.filteredCollections.removeAll();
+    cleanCollections();
     location.href = collection.absoluteUrl();
   };
 
-  self.markForDeletion = function (collection) {
-    self.collectionToDelete = collection;
-    $(document).trigger("confirmDelete");
+  self.editIndex = function (collection) {
+    location.href = self.INDEXER_URL + collection.name();
   };
 
-  self.deleteCollection = function () {
+  self.markManyForDeletion = function (collections) {
+    self.collectionToDelete = collections;
+    $(document).trigger("confirmDelete")
+  };
+
+  self.deleteCollections = function () {
+    self.isLoading(true);
     $(document).trigger("deleting");
     $.post(self.DELETE_URL,
       {
-        id: self.collectionToDelete.id()
+        collections: ko.mapping.toJSON(self.selectedCollections())
       },
       function (data) {
         self.updateCollections();
-        $(document).trigger("collectionDeleted");
-      }, "json");
+      }, "json"
+    ).fail(function (xhr, textStatus, errorThrown) {});
+    $(document).trigger("collectionDeleted");
   };
 
-  self.copyCollection = function (collection) {
+  self.copyCollections = function (collections) {
     $(document).trigger("copying");
     $.post(self.COPY_URL,
       {
-        id: collection.id(),
-        type: collection.isCoreOnly()?"core":"collection"
-      },
-      function (data) {
+        collections: ko.mapping.toJSON(self.selectedCollections())
+      }, function (data) {
         self.updateCollections();
-        $(document).trigger("collectionCopied");
-      }, "json");
+      }, "json"
+    ).fail(function (xhr, textStatus, errorThrown) {});
+    $(document).trigger("collectionCopied");
   };
 
   self.updateCollections = function () {
@@ -185,4 +195,18 @@ var SearchCollectionsModel = function (props) {
       }, "json");
   };
 
+  self.toggleSelectAll = function() { // duplicated from hue/desktop/libs/indexer/static/js/collections.js
+    var direction = ! self.selectedCollections().length;
+    ko.utils.arrayForEach(self.filteredCollections(), function(collection) {
+      collection.selected(direction);
+    });
+  };
+
+  self.toggleCollectionSelect = function(collection, e) { // duplicated from hue/desktop/libs/indexer/static/js/collections.js
+    ko.utils.arrayForEach(self.collections(), function(other_collection) {
+      if(ko.unwrap(other_collection).id() == collection.id()) {
+        other_collection.selected(! other_collection.selected());
+      }
+    });
+  };
 };
